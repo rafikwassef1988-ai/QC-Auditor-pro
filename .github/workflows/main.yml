@@ -35,19 +35,32 @@ jobs:
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" -Dorg.gradle.daemon=false
         run: |
           echo "=== Setting up Environment ==="
-          if [ ! -f ".env.example" ]; then
-            echo "GEMINI_API_KEY=" > .env.example
+          if [ -f ".env.example" ]; then
+            echo "Copying .env.example to .env..."
+            cp .env.example .env
+          else
+            echo "GEMINI_API_KEY=dummy_api_key_placeholder" > .env
           fi
-          if [ ! -f ".env" ]; then
-            touch .env
-          fi
+          echo "=== Verify .env content ==="
+          cat .env
           
           echo "=== Preparing Keystore ==="
           if [ -f "debug.keystore.base64" ]; then
-            echo "Decoding debug.keystore..."
+            echo "Decoding debug.keystore from base64..."
             base64 -d debug.keystore.base64 > debug.keystore
+          elif [ -f "debug.keystore" ]; then
+            echo "debug.keystore already exists."
           else
-            echo "Warning: debug.keystore.base64 not found!"
+            echo "debug.keystore not found! Generating a new one dynamically via keytool..."
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          
+          # Verify that debug.keystore exists and has correct size
+          if [ -f "debug.keystore" ]; then
+            echo "debug.keystore is ready. Size: $(wc -c < debug.keystore) bytes."
+          else
+            echo "ERROR: debug.keystore could not be prepared!"
+            exit 1
           fi
           
           echo "=== Optimizing gradle.properties for CI memory limits ==="
