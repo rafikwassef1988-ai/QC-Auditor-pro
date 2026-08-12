@@ -31,7 +31,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build Debug APK
-        # يقوم هذا الجزء بمسح الملفات التالفة وتوليد نسخة نظيفة 100% داخل السيرفر مباشرة لتفادي مشاكل الرفع اليدوي
+        # يقوم هذا الجزء التلقائي بتوليد ملفات البيئة المخفية وحل مشكلة عدم رفعها يدوياً
         run: |
           echo "=== CLI Diagnostics ==="
           echo "Current working directory:"
@@ -46,6 +46,16 @@ jobs:
           fi
           echo "Detected project directory: $PROJECT_DIR"
           cd "$PROJECT_DIR"
+          
+          echo "=== Handling Secrets Configuration ==="
+          if [ ! -f ".env.example" ]; then
+            echo ".env.example not found! Generating dummy .env.example to satisfy gradle plugin requirements..."
+            echo "GEMINI_API_KEY=" > .env.example
+          fi
+          if [ ! -f ".env" ]; then
+            echo ".env not found! Generating empty .env..."
+            touch .env
+          fi
           
           echo "=== Regenerating Gradle Wrapper to Prevent Corruption ==="
           # مسح الملفات التالفة المرفوعة يدوياً
