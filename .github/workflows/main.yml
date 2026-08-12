@@ -31,7 +31,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build Debug APK
-        # يقوم هذا الجزء التلقائي بتوليد ملفات البيئة المخفية وحل مشكلة عدم رفعها يدوياً
+        # يقوم هذا الجزء بتوليد نسخة نظيفة ومتوافقة تماماً 9.3.1 داخل السيرفر مباشرة لتفادي مشاكل الرفع اليدوي
         run: |
           echo "=== CLI Diagnostics ==="
           echo "Current working directory:"
@@ -63,8 +63,8 @@ jobs:
           rm -f ./gradlew.bat
           rm -rf ./gradle/wrapper
           
-          echo "Generating clean Gradle wrapper..."
-          gradle wrapper --gradle-version 8.7 --distribution-type bin
+          echo "Generating clean Gradle wrapper version 9.3.1..."
+          gradle wrapper --gradle-version 9.3.1 --distribution-type bin
           
           if [ -f "./gradlew" ]; then
             echo "gradlew generated successfully. Ensuring execution permissions..."
