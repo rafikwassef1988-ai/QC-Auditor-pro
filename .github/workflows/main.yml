@@ -32,15 +32,18 @@ jobs:
         with:
           gradle-home-cache-cleanup: true
 
-      - name: Grant Execute Permission to Gradle Wrapper
+      - name: Build Debug APK
+        # هذا الجزء الذكي يبحث عن مجلد المشروع تلقائياً ويبدأ البناء منه مباشرة
         run: |
+          PROJECT_DIR=$(find . -name "settings.gradle.kts" -not -path "*/.gradle/*" -not -path "*/app/*" | head -n 1 | xargs dirname)
+          if [ -z "$PROJECT_DIR" ] || [ "$PROJECT_DIR" = "." ]; then
+            PROJECT_DIR="."
+          fi
+          echo "Detected project directory: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          
           if [ -f "./gradlew" ]; then
             chmod +x ./gradlew
-          fi
-
-      - name: Build Debug APK
-        run: |
-          if [ -f "./gradlew" ]; then
             ./gradlew assembleDebug --stacktrace
           else
             gradle assembleDebug --stacktrace
@@ -50,6 +53,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: "**/build/outputs/apk/debug/*.apk"
           if-no-files-found: error
           retention-days: 7
