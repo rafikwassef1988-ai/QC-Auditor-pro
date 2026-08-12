@@ -1,0 +1,50 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="128dp"
+    android:height="128dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <!-- Dark Blue Slate Circle Background -->
+    <path
+        android:fillColor="#0D253F"
+        android:pathData="M256,256m-230,0a230,230 0,1 1,460 0a230,230 0,1 1,-460 0" />
+        
+    <!-- Stylized White Q Circle -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="26"
+        android:pathData="M185,210m-70,0a70,70 0,1 1,140 0a70,70 0,1 1,-140 0" />
+        
+    <!-- Tail of Q -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="26"
+        android:strokeLineCap="round"
+        android:pathData="M215,245 L275,305" />
+        
+    <!-- Stylized White C Shape -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="26"
+        android:strokeLineCap="round"
+        android:pathData="M370,155 A70,70 0 1,0 370,265" />
+        
+    <!-- Teal Checkmark inside C -->
+    <path
+        android:strokeColor="#00BFA5"
+        android:strokeWidth="22"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M295,215 L328,248 L390,174" />
+        
+    <!-- Horizontal Accent Line -->
+    <path
+        android:strokeColor="#00BFA5"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:pathData="M110,355 L402,355" />
+        
+    <!-- Central Node on Horizontal Line -->
+    <path
+        android:fillColor="#00BFA5"
+        android:pathData="M256,355m-12,0a12,12 0,1 1,24 0a12,12 0,1 1,-24 0" />
+</vector>

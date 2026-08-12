@@ -1,0 +1,8 @@
+{
+  "name": "QC Internal Audit Pro",
+  "description": "Professional auto collage arranger with intelligent layouts customization, Arabic translation support and Material Design 3.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
