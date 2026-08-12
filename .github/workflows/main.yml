@@ -33,7 +33,7 @@ jobs:
           gradle-version: '9.3.1'
 
       - name: Build Debug APK
-        # يقوم هذا الجزء بتوليد ملفات البيئة وفك تشفير ملف البصمة بأمان لبناء الـ APK بنجاح مع تحسين الذاكرة
+        # تهيئة البيئة والتحكم الذكي في حجم الذاكرة لتفادي مشكلة الـ OOM Killer على السيرفر
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" -Dorg.gradle.daemon=false
         run: |
@@ -69,22 +69,35 @@ jobs:
             echo "Warning: debug.keystore.base64 not found!"
           fi
           
+          echo "=== Optimizing gradle.properties for CI Memory Limits ==="
+          if [ -f "gradle.properties" ]; then
+            echo "Applying memory limits and disabling parallel builds to prevent OOM crashes..."
+            sed -i 's/org.gradle.jvmargs=-Xmx4g/org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m/g' gradle.properties
+            sed -i 's/org.gradle.parallel=true/org.gradle.parallel=false/g' gradle.properties
+            sed -i 's/org.gradle.workers.max=4/org.gradle.workers.max=1/g' gradle.properties
+            echo "kotlin.compiler.execution.strategy=in-process" >> gradle.properties
+            echo "=== Updated gradle.properties ==="
+            cat gradle.properties
+          else
+            echo "gradle.properties not found!"
+          fi
+          
           echo "=== Regenerating Gradle Wrapper to Prevent Corruption ==="
           rm -f ./gradlew
           rm -f ./gradlew.bat
           rm -rf ./gradle/wrapper
           
-          echo "Generating clean Gradle wrapper version 9.3.1..."
+          echo "Generating clean Gradle wrapper..."
           gradle wrapper --gradle-version 9.3.1 --distribution-type bin
           
           if [ -f "./gradlew" ]; then
             echo "gradlew generated successfully. Ensuring execution permissions..."
             chmod +x ./gradlew
             echo "Running ./gradlew assembleDebug..."
-            ./gradlew assembleDebug --stacktrace
+            ./gradlew assembleDebug --stacktrace --no-daemon --no-parallel -Dorg.gradle.workers.max=1
           else
             echo "gradlew generation failed. Attempting to build using system gradle..."
-            gradle assembleDebug --stacktrace
+            gradle assembleDebug --stacktrace --no-daemon --no-parallel -Dorg.gradle.workers.max=1
           fi
 
       - name: Upload Debug APK Artifact
