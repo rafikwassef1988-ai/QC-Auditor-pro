@@ -33,8 +33,15 @@ jobs:
           gradle-home-cache-cleanup: true
 
       - name: Build Debug APK
-        # هذا الجزء الذكي يبحث عن مجلد المشروع تلقائياً ويبدأ البناء منه مباشرة
+        # يقوم هذا الجزء التلقائي بفحص الملفات وإصلاح ترميز الويندوز وتوليد الملفات الناقصة وبناء التطبيق
         run: |
+          echo "=== CLI Diagnostics ==="
+          echo "Current working directory:"
+          pwd
+          echo "Listing files in the workspace (depth 3):"
+          find . -maxdepth 3 -not -path '*/.*'
+          
+          echo "=== Detecting Project Directory ==="
           PROJECT_DIR=$(find . -name "settings.gradle.kts" -not -path "*/.gradle/*" -not -path "*/app/*" | head -n 1 | xargs dirname)
           if [ -z "$PROJECT_DIR" ] || [ "$PROJECT_DIR" = "." ]; then
             PROJECT_DIR="."
@@ -42,10 +49,21 @@ jobs:
           echo "Detected project directory: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           
+          echo "=== Checking Gradle Wrapper ==="
+          if [ ! -f "./gradlew" ]; then
+            echo "gradlew is missing! Attempting to generate it..."
+            gradle wrapper --gradle-version 8.7 || echo "Failed to generate wrapper using pre-installed gradle, will try direct build."
+          fi
+          
           if [ -f "./gradlew" ]; then
+            echo "gradlew found. Ensuring correct line endings and execution permissions..."
+            # إصلاح مشكلة ملفات ويندوز تلقائياً (\r) التي تسبب الفشل في لينكس
+            tr -d '\r' < ./gradlew > ./gradlew.tmp && mv ./gradlew.tmp ./gradlew
             chmod +x ./gradlew
+            echo "Running ./gradlew assembleDebug..."
             ./gradlew assembleDebug --stacktrace
           else
+            echo "gradlew still not found. Attempting to build using system gradle..."
             gradle assembleDebug --stacktrace
           fi
 
