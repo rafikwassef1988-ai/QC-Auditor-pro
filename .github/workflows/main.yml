@@ -29,76 +29,49 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '9.3.1'
 
       - name: Build Debug APK
-        # تهيئة البيئة والتحكم الذكي في حجم الذاكرة لتفادي مشكلة الـ OOM Killer على السيرفر
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" -Dorg.gradle.daemon=false
         run: |
-          echo "=== CLI Diagnostics ==="
-          echo "Current working directory:"
-          pwd
-          echo "Listing files in the workspace (depth 3):"
-          find . -maxdepth 3 -not -path '*/.*'
-          
-          echo "=== Detecting Project Directory ==="
-          PROJECT_DIR=$(find . -name "settings.gradle.kts" -not -path "*/.gradle/*" -not -path "*/app/*" | head -n 1 | xargs dirname)
-          if [ -z "$PROJECT_DIR" ] || [ "$PROJECT_DIR" = "." ]; then
-            PROJECT_DIR="."
-          fi
-          echo "Detected project directory: $PROJECT_DIR"
-          cd "$PROJECT_DIR"
-          
-          echo "=== Handling Secrets Configuration ==="
+          echo "=== Setting up Environment ==="
           if [ ! -f ".env.example" ]; then
-            echo ".env.example not found! Generating dummy .env.example to satisfy gradle plugin requirements..."
             echo "GEMINI_API_KEY=" > .env.example
           fi
           if [ ! -f ".env" ]; then
-            echo ".env not found! Generating empty .env..."
             touch .env
           fi
           
-          echo "=== Handling Keystore Configuration ==="
+          echo "=== Preparing Keystore ==="
           if [ -f "debug.keystore.base64" ]; then
-            echo "Decoding debug.keystore from base64..."
+            echo "Decoding debug.keystore..."
             base64 -d debug.keystore.base64 > debug.keystore
           else
             echo "Warning: debug.keystore.base64 not found!"
           fi
           
-          echo "=== Optimizing gradle.properties for CI Memory Limits ==="
+          echo "=== Optimizing gradle.properties for CI memory limits ==="
           if [ -f "gradle.properties" ]; then
-            echo "Applying memory limits and disabling parallel builds to prevent OOM crashes..."
-            sed -i 's/org.gradle.jvmargs=-Xmx4g/org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m/g' gradle.properties
+            # Disable parallel builds, configuration caching, and build caching to prevent JVM memory exhaustion
             sed -i 's/org.gradle.parallel=true/org.gradle.parallel=false/g' gradle.properties
+            sed -i 's/org.gradle.configuration-cache=true/org.gradle.configuration-cache=false/g' gradle.properties
+            sed -i 's/org.gradle.caching=true/org.gradle.caching=false/g' gradle.properties
             sed -i 's/org.gradle.workers.max=4/org.gradle.workers.max=1/g' gradle.properties
+            sed -i 's/org.gradle.jvmargs=-Xmx4g/org.gradle.jvmargs=-Xmx2048m/g' gradle.properties
+            
+            # Force Kotlin to compile in-process so it doesn't spin up another memory-heavy daemon
             echo "kotlin.compiler.execution.strategy=in-process" >> gradle.properties
+            
             echo "=== Updated gradle.properties ==="
             cat gradle.properties
-          else
-            echo "gradle.properties not found!"
           fi
           
-          echo "=== Regenerating Gradle Wrapper to Prevent Corruption ==="
-          rm -f ./gradlew
-          rm -f ./gradlew.bat
-          rm -rf ./gradle/wrapper
+          echo "=== Fixing Gradlew line endings & permissions ==="
+          sed -i 's/\r$//' gradlew
+          chmod +x gradlew
           
-          echo "Generating clean Gradle wrapper..."
-          gradle wrapper --gradle-version 9.3.1 --distribution-type bin
-          
-          if [ -f "./gradlew" ]; then
-            echo "gradlew generated successfully. Ensuring execution permissions..."
-            chmod +x ./gradlew
-            echo "Running ./gradlew assembleDebug..."
-            ./gradlew assembleDebug --stacktrace --no-daemon --no-parallel -Dorg.gradle.workers.max=1
-          else
-            echo "gradlew generation failed. Attempting to build using system gradle..."
-            gradle assembleDebug --stacktrace --no-daemon --no-parallel -Dorg.gradle.workers.max=1
-          fi
+          echo "=== Running Gradle Build ==="
+          ./gradlew assembleDebug --stacktrace --no-daemon --no-parallel -Dorg.gradle.workers.max=1
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
