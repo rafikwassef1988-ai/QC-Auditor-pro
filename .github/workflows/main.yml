@@ -31,7 +31,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build Debug APK
-        # يقوم هذا الجزء بتوليد نسخة نظيفة ومتوافقة تماماً 9.3.1 داخل السيرفر مباشرة لتفادي مشاكل الرفع اليدوي
+        # يقوم هذا الجزء بتوليد ملفات البيئة وفك تشفير ملف البصمة بأمان لبناء الـ APK بنجاح
         run: |
           echo "=== CLI Diagnostics ==="
           echo "Current working directory:"
@@ -55,6 +55,14 @@ jobs:
           if [ ! -f ".env" ]; then
             echo ".env not found! Generating empty .env..."
             touch .env
+          fi
+          
+          echo "=== Handling Keystore Configuration ==="
+          if [ -f "debug.keystore.base64" ]; then
+            echo "Decoding debug.keystore from base64..."
+            base64 -d debug.keystore.base64 > debug.keystore
+          else
+            echo "Warning: debug.keystore.base64 not found!"
           fi
           
           echo "=== Regenerating Gradle Wrapper to Prevent Corruption ==="
